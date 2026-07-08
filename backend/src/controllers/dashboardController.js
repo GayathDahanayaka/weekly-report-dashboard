@@ -1,6 +1,16 @@
 const Report = require('../models/Report');
 const User = require('../models/User');
 
+// @route  GET /api/dashboard/members   (manager) - team member list for filter dropdowns
+exports.getTeamMembers = async (req, res, next) => {
+  try {
+    const members = await User.find({ role: 'member' }).select('name email');
+    res.status(200).json({ members });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @route  GET /api/dashboard/summary?weekStart=YYYY-MM-DD   (manager)
 exports.getSummary = async (req, res, next) => {
   try {
