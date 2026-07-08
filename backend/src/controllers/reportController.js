@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator');
 const Report = require('../models/Report');
 const User = require('../models/User');
+const { isPastDeadline } = require('../utils/weekDeadline');
 
 // @route  POST /api/reports   (member - creates own report)
 exports.createReport = async (req, res, next) => {
@@ -41,6 +42,9 @@ exports.createReport = async (req, res, next) => {
 // @route  PUT /api/reports/:id   (member - only own report, only before it's submitted... editable per your design, kept open here)
 exports.updateReport = async (req, res, next) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
     const report = await Report.findById(req.params.id);
     if (!report) return res.status(404).json({ message: 'Report not found' });
 
@@ -74,8 +78,7 @@ exports.submitReport = async (req, res, next) => {
     }
 
     const now = new Date();
-    const graceMs = 2 * 24 * 60 * 60 * 1000; // 2 day grace period after week ends
-    const isLate = now.getTime() > new Date(report.weekEndDate).getTime() + graceMs;
+    const isLate = isPastDeadline(report.weekStartDate, now);
 
     report.status = isLate ? 'late' : 'submitted';
     report.submittedAt = now;
@@ -133,19 +136,28 @@ exports.getSubmissionStatus = async (req, res, next) => {
       return res.status(400).json({ message: 'weekStart query param is required' });
     }
 
-    const members = await User.find({ role: 'member' }).select('name email');
-    const reports = await Report.find({ weekStartDate: new Date(weekStart) });
+    const dayStart = new Date(weekStart);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
 
+    const members = await User.find({ role: 'member' }).select('name email');
+    const reports = await Report.find({ weekStartDate: { $gte: dayStart, $lt: dayEnd } });
+
+    // A draft doesn't count as fulfilling the week - only submitted/late do.
     const reportByUser = {};
     reports.forEach((r) => {
-      reportByUser[r.userId.toString()] = r.status;
+      if (r.status === 'submitted' || r.status === 'late') {
+        reportByUser[r.userId.toString()] = r.status;
+      }
     });
+
+    const pastDeadline = isPastDeadline(dayStart);
 
     const statusList = members.map((m) => ({
       userId: m._id,
       name: m.name,
       email: m.email,
-      status: reportByUser[m._id.toString()] || 'pending',
+      status: reportByUser[m._id.toString()] || (pastDeadline ? 'late' : 'pending'),
     }));
 
     res.status(200).json({ week: weekStart, statusList });

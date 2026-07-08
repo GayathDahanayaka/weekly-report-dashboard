@@ -1,6 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ResponsiveContainer } from 'recharts';
 
-const COLORS = { submitted: '#2f6f4f', late: '#a3392f', pending: '#a6641c' };
+const COLORS = { submitted: '#2f6f4f', late: '#b3261e', pending: '#a9820a' };
 
 export default function StatusChart({ data }) {
   return (

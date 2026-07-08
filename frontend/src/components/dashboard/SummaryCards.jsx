@@ -7,7 +7,7 @@ export default function SummaryCards({ summary }) {
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       {cards.map((c, i) => (
         <div key={c.label} className="border border-line bg-paper-card rounded-sm p-5 relative">
           <span className="absolute top-3 right-4 font-mono text-[10px] text-ink-faint">

@@ -5,6 +5,7 @@ const {
   getProjects,
   updateProject,
   deleteProject,
+  assignMembers,
 } = require('../controllers/projectController');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
@@ -30,5 +31,7 @@ projectRouter.put(
 );
 
 projectRouter.delete('/:id', roleMiddleware('manager'), deleteProject);
+
+projectRouter.put('/:id/assign', roleMiddleware('manager'), assignMembers);
 
 module.exports = projectRouter;

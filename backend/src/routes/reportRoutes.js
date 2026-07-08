@@ -25,10 +25,19 @@ reportRouter.post(
     body('weekEndDate').isISO8601().withMessage('Valid weekEndDate is required'),
     body('tasksCompleted').trim().notEmpty().withMessage('Tasks completed is required'),
     body('tasksPlanned').trim().notEmpty().withMessage('Tasks planned is required'),
+    body('hoursWorked').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('Hours worked cannot be negative'),
   ],
   createReport
 );
-reportRouter.put('/:id', updateReport);
+reportRouter.put(
+  '/:id',
+  [
+    body('tasksCompleted').optional().trim().notEmpty().withMessage('Tasks completed cannot be empty'),
+    body('tasksPlanned').optional().trim().notEmpty().withMessage('Tasks planned cannot be empty'),
+    body('hoursWorked').optional({ nullable: true }).isFloat({ min: 0 }).withMessage('Hours worked cannot be negative'),
+  ],
+  updateReport
+);
 reportRouter.post('/:id/submit', roleMiddleware('member'), submitReport);
 reportRouter.get('/me', roleMiddleware('member'), getMyReports);
 

@@ -1,7 +1,7 @@
 const STYLES = {
-  submitted: { color: 'var(--color-ok)', label: 'Submitted' },
-  late: { color: 'var(--color-danger)', label: 'Late' },
-  pending: { color: 'var(--color-warn)', label: 'Pending' },
+  submitted: { color: '#2f6f4f', label: 'Submitted' },
+  late: { color: '#b3261e', label: 'Late' },
+  pending: { color: '#a9820a', label: 'Pending' },
   draft: { color: 'var(--color-ink-faint)', label: 'Draft' },
 };
 

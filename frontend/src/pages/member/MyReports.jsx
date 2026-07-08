@@ -4,13 +4,16 @@ import ReportForm from '../../components/reports/ReportForm';
 import ReportHistoryList from '../../components/reports/ReportHistoryList';
 import { Loader, ErrorBanner } from '../../components/common/Loader';
 import axiosInstance from '../../api/axiosInstance';
+import { useAuth } from '../../context/AuthContext';
 
 export default function MyReports() {
+  const { user } = useAuth();
   const [projects, setProjects] = useState([]);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [editingReport, setEditingReport] = useState(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -32,15 +35,22 @@ export default function MyReports() {
     loadData();
   }, []);
 
-  const handleSubmit = async (form) => {
+  const buildPayload = (form) => ({
+    ...form,
+    hoursWorked: form.hoursWorked ? Number(form.hoursWorked) : null,
+  });
+
+  // Save without submitting - stays as "draft" (or keeps current status if just editing content)
+  const handleSaveDraft = async (form) => {
     setSubmitting(true);
     setError('');
     try {
-      const { data } = await axiosInstance.post('/reports', {
-        ...form,
-        hoursWorked: form.hoursWorked ? Number(form.hoursWorked) : null,
-      });
-      await axiosInstance.post(`/reports/${data.report._id}/submit`);
+      if (editingReport) {
+        await axiosInstance.put(`/reports/${editingReport._id}`, buildPayload(form));
+      } else {
+        await axiosInstance.post('/reports', buildPayload(form));
+      }
+      setEditingReport(null);
       await loadData();
     } catch (err) {
       setError(err.response?.data?.message || 'Could not save this report.');
@@ -49,16 +59,53 @@ export default function MyReports() {
     }
   };
 
+  // Save content, then submit (moves status to submitted/late)
+  const handleSubmitReport = async (form) => {
+    setSubmitting(true);
+    setError('');
+    try {
+      let reportId = editingReport?._id;
+      if (reportId) {
+        await axiosInstance.put(`/reports/${reportId}`, buildPayload(form));
+      } else {
+        const { data } = await axiosInstance.post('/reports', buildPayload(form));
+        reportId = data.report._id;
+      }
+      await axiosInstance.post(`/reports/${reportId}/submit`);
+      setEditingReport(null);
+      await loadData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not submit this report.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const myProjects = projects.filter(
+    (p) => !p.assignedMembers?.length || p.assignedMembers.some((m) => m._id === user?.id)
+  );
+
   return (
     <AppLayout title="My Reports" subtitle="One entry per week, same fields every time.">
       <ErrorBanner message={error} />
-      <div className="grid grid-cols-[1fr_1.1fr] gap-8 items-start">
-        <ReportForm projects={projects} onSubmit={handleSubmit} submitting={submitting} />
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-8 items-start">
+        <ReportForm
+          projects={myProjects}
+          editingReport={editingReport}
+          onSaveDraft={handleSaveDraft}
+          onSubmitReport={handleSubmitReport}
+          onCancelEdit={() => setEditingReport(null)}
+          submitting={submitting}
+        />
         <div>
           <p className="text-xs uppercase tracking-widest text-ink-faint font-mono mb-4">
             History — {reports.length} {reports.length === 1 ? 'entry' : 'entries'}
           </p>
-          {loading ? <Loader label="Loading your reports…" /> : <ReportHistoryList reports={reports} />}
+          {loading ? (
+            <Loader label="Loading your reports…" />
+          ) : (
+            <ReportHistoryList reports={reports} onEdit={setEditingReport} />
+          )}
         </div>
       </div>
     </AppLayout>
