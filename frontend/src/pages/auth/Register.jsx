@@ -33,7 +33,7 @@ export default function Register() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <p className="font-display text-3xl text-paper leading-none">Weekly</p>
-          <p className="font-display text-3xl text-accent leading-none">Ledger</p>
+          <p className="font-display text-3xl text-accent leading-none">WorkHub</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-paper-card rounded-sm p-8 space-y-5 shadow-xl animate-scaleIn">

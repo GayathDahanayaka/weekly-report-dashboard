@@ -103,18 +103,26 @@ exports.getMyReports = async (req, res, next) => {
 };
 
 // @route  GET /api/reports   (manager - all reports, filterable)
-// query params: member, project, from, to
+// query params: member, project, from, to, week
+// "week" filters to a single week (its Monday, YYYY-MM-DD). "from"/"to" are
+// an explicit custom range and take priority over "week" when either is set.
 exports.getAllReports = async (req, res, next) => {
   try {
-    const { member, project, from, to } = req.query;
+    const { member, project, from, to, week } = req.query;
     const filter = {};
 
     if (member) filter.userId = member;
     if (project) filter.projectId = project;
+
     if (from || to) {
       filter.weekStartDate = {};
       if (from) filter.weekStartDate.$gte = new Date(from);
       if (to) filter.weekStartDate.$lte = new Date(to);
+    } else if (week) {
+      const dayStart = new Date(week);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+      filter.weekStartDate = { $gte: dayStart, $lt: dayEnd };
     }
 
     const reports = await Report.find(filter)

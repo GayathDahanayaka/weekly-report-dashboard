@@ -197,10 +197,23 @@ export default function ChatWidget() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-40 bg-ink text-paper rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-ink-soft transition-colors"
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-ink text-paper rounded-full pl-3.5 pr-4.5 py-3 shadow-lg hover:bg-ink-soft hover:shadow-xl transition-all duration-150"
         aria-label="Open team assistant"
       >
-        <span className="font-display text-xl text-accent">?</span>
+        <span className="relative flex items-center justify-center w-5 h-5 shrink-0">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-accent/40 animate-ping" style={{ animationDuration: '2.5s' }} />
+          <svg viewBox="0 0 20 20" fill="none" className="relative w-5 h-5 text-accent">
+            <path
+              d="M10 2.5c.35 0 .66.24.74.58l.6 2.55 2.55.6a.77.77 0 0 1 0 1.5l-2.55.6-.6 2.55a.77.77 0 0 1-1.5 0l-.6-2.55-2.55-.6a.77.77 0 0 1 0-1.5l2.55-.6.6-2.55A.77.77 0 0 1 10 2.5Z"
+              fill="currentColor"
+            />
+            <path
+              d="M16 12c.24 0 .45.16.5.4l.28 1.22 1.22.28a.5.5 0 0 1 0 .98l-1.22.28-.28 1.22a.5.5 0 0 1-.98 0l-.28-1.22-1.22-.28a.5.5 0 0 1 0-.98l1.22-.28.28-1.22a.5.5 0 0 1 .48-.4Z"
+              fill="currentColor"
+            />
+          </svg>
+        </span>
+        <span className="text-sm font-medium leading-none whitespace-nowrap">Ask Team Assistant</span>
       </button>
     );
   }
@@ -255,7 +268,12 @@ export default function ChatWidget() {
             </div>
           </div>
         )}
-        {error && <p className="text-xs text-danger">{error}</p>}
+        {error && (
+          <div className="flex items-start gap-2 border border-danger/30 bg-danger-soft text-danger text-xs px-3 py-2 rounded-sm">
+            <span className="shrink-0 w-3.5 h-3.5 mt-0.5 rounded-full bg-danger text-paper flex items-center justify-center text-[9px] font-bold">!</span>
+            <span>{error}</span>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
