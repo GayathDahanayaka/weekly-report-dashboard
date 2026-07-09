@@ -22,7 +22,9 @@ export default function ReportsTable({ reports, onRowClick }) {
             <tr
               key={r._id}
               onClick={() => onRowClick(r)}
-              className="border-b border-line-soft last:border-0 hover:bg-paper-dim/40 cursor-pointer"
+              tabIndex={0}
+              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onRowClick(r)}
+              className="border-b border-line-soft last:border-0 hover:bg-paper-dim/50 cursor-pointer transition-colors duration-100 focus-visible:bg-paper-dim/60"
             >
               <td className="px-5 py-3 text-ink font-medium">{r.userId?.name}</td>
               <td className="px-5 py-3 text-ink-faint font-mono text-xs tabular">

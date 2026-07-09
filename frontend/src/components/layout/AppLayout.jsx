@@ -1,6 +1,10 @@
 import Sidebar from './Sidebar';
+import ChatWidget from '../ai/ChatWidget';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AppLayout({ title, subtitle, children }) {
+  const { user } = useAuth();
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-paper">
       <Sidebar />
@@ -14,6 +18,7 @@ export default function AppLayout({ title, subtitle, children }) {
         </header>
         {children}
       </main>
+      {user?.role === 'manager' && <ChatWidget />}
     </div>
   );
 }

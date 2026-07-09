@@ -5,9 +5,13 @@ import ReportHistoryList from '../../components/reports/ReportHistoryList';
 import { Loader, ErrorBanner } from '../../components/common/Loader';
 import axiosInstance from '../../api/axiosInstance';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import { useDocumentTitle } from '../../utils/useDocumentTitle';
 
 export default function MyReports() {
+  useDocumentTitle('My Reports');
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [projects, setProjects] = useState([]);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +54,7 @@ export default function MyReports() {
       } else {
         await axiosInstance.post('/reports', buildPayload(form));
       }
+      showToast('Draft saved');
       setEditingReport(null);
       await loadData();
     } catch (err) {
@@ -72,6 +77,7 @@ export default function MyReports() {
         reportId = data.report._id;
       }
       await axiosInstance.post(`/reports/${reportId}/submit`);
+      showToast('Report submitted');
       setEditingReport(null);
       await loadData();
     } catch (err) {

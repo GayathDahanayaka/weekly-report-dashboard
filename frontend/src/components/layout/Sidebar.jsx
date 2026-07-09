@@ -16,7 +16,7 @@ export default function Sidebar() {
       <div className="flex md:flex-col items-center md:items-stretch justify-between md:justify-start px-5 md:px-6 py-4 md:py-7 border-b border-paper/10">
         <div className="leading-none">
           <p className="font-display text-lg md:text-xl inline md:block">Weekly </p>
-          <p className="font-display text-lg md:text-xl text-accent inline md:block">WorkHub</p>
+          <p className="font-display text-lg md:text-xl text-accent inline md:block">Ledger</p>
         </div>
         <button
           onClick={logout}

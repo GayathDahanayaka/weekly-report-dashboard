@@ -7,6 +7,50 @@ export function Loader({ label = 'Loading' }) {
   );
 }
 
+export function Skeleton({ className = '' }) {
+  return <div className={`skeleton rounded-sm ${className}`} />;
+}
+
+export function SummaryCardsSkeleton() {
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="border border-line bg-paper-card rounded-sm p-5">
+          <Skeleton className="h-8 w-12 mb-3" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ChartSkeleton({ height = 'h-56' }) {
+  return (
+    <div className="border border-line bg-paper-card rounded-sm p-5">
+      <Skeleton className="h-3 w-32 mb-4" />
+      <Skeleton className={`w-full ${height}`} />
+    </div>
+  );
+}
+
+export function DashboardSkeleton() {
+  return (
+    <div>
+      <SummaryCardsSkeleton />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
+          <ChartSkeleton />
+          <ChartSkeleton />
+        </div>
+        <div className="grid grid-cols-1 gap-6">
+          <ChartSkeleton />
+          <ChartSkeleton height="h-40" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function EmptyState({ title, hint, action }) {
   return (
     <div className="text-center py-14 px-6 border border-dashed border-line rounded-sm">

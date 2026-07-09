@@ -2,10 +2,15 @@ import { useEffect, useState } from 'react';
 import AppLayout from '../../components/layout/AppLayout';
 import { Field, Input, Textarea } from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Loader, ErrorBanner, EmptyState } from '../../components/common/Loader';
 import axiosInstance from '../../api/axiosInstance';
+import { useToast } from '../../context/ToastContext';
+import { useDocumentTitle } from '../../utils/useDocumentTitle';
 
 export default function ProjectsAdmin() {
+  useDocumentTitle('Projects');
+  const { showToast } = useToast();
   const [projects, setProjects] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,6 +19,7 @@ export default function ProjectsAdmin() {
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [assigningId, setAssigningId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -45,8 +51,10 @@ export default function ProjectsAdmin() {
     try {
       if (editingId) {
         await axiosInstance.put(`/projects/${editingId}`, form);
+        showToast('Project updated');
       } else {
         await axiosInstance.post('/projects', form);
+        showToast('Project added');
       }
       resetForm();
       await load();
@@ -62,13 +70,15 @@ export default function ProjectsAdmin() {
     setEditingId(p._id);
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Delete this project? Reports linked to it will keep their reference.')) return;
+  const confirmDelete = async () => {
     try {
-      await axiosInstance.delete(`/projects/${id}`);
+      await axiosInstance.delete(`/projects/${deleteTarget._id}`);
+      showToast('Project deleted');
+      setDeleteTarget(null);
       await load();
     } catch {
       setError('Could not delete project.');
+      setDeleteTarget(null);
     }
   };
 
@@ -125,7 +135,7 @@ export default function ProjectsAdmin() {
                     </div>
                     <div className="flex gap-2 shrink-0">
                       <Button variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => handleEdit(p)}>Edit</Button>
-                      <Button variant="danger" className="px-3 py-1.5 text-xs" onClick={() => handleDelete(p._id)}>Delete</Button>
+                      <Button variant="danger" className="px-3 py-1.5 text-xs" onClick={() => setDeleteTarget(p)}>Delete</Button>
                     </div>
                   </div>
 
@@ -163,6 +173,15 @@ export default function ProjectsAdmin() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete this project?"
+        message={`"${deleteTarget?.name}" will be removed. Reports already linked to it keep their reference.`}
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </AppLayout>
   );
 }

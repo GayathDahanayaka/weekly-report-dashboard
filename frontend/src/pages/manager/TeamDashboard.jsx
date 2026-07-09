@@ -11,9 +11,10 @@ import FilterBar from '../../components/dashboard/FilterBar';
 import ReportsTable from '../../components/dashboard/ReportsTable';
 import Modal from '../../components/common/Modal';
 import ReportDetail from '../../components/dashboard/ReportDetail';
-import { Loader, ErrorBanner } from '../../components/common/Loader';
+import { ErrorBanner, DashboardSkeleton } from '../../components/common/Loader';
 import axiosInstance from '../../api/axiosInstance';
 import { toLocalDateString } from '../../utils/reportStatus';
+import { useDocumentTitle } from '../../utils/useDocumentTitle';
 
 function mondayOf(date) {
   const d = new Date(date);
@@ -47,6 +48,7 @@ function buildWeekOptions(realWeeks) {
 }
 
 export default function TeamDashboard() {
+  useDocumentTitle('Team Dashboard');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [projects, setProjects] = useState([]);
@@ -132,7 +134,7 @@ export default function TeamDashboard() {
   if (loading) {
     return (
       <AppLayout title="Team Dashboard" subtitle="Pick a week to inspect the team's activity.">
-        <Loader label="Loading dashboard…" />
+        <DashboardSkeleton />
       </AppLayout>
     );
   }

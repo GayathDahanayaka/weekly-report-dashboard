@@ -19,6 +19,14 @@ function toDateInput(value) {
   return new Date(value).toISOString().slice(0, 10);
 }
 
+function formatRange(start, end) {
+  if (!start || !end) return null;
+  const opts = { month: 'short', day: 'numeric', year: 'numeric' };
+  const s = new Date(`${start}T00:00:00`).toLocaleDateString('en-US', opts);
+  const e = new Date(`${end}T00:00:00`).toLocaleDateString('en-US', opts);
+  return `${s} – ${e}`;
+}
+
 export default function ReportForm({ projects, editingReport, onSaveDraft, onSubmitReport, onCancelEdit, submitting }) {
   const [form, setForm] = useState(emptyForm);
 
@@ -67,30 +75,45 @@ export default function ReportForm({ projects, editingReport, onSaveDraft, onSub
     setForm(emptyForm);
   };
 
+  const range = formatRange(form.weekStartDate, form.weekEndDate);
+  const isResubmit = editingReport?.status && editingReport.status !== 'draft';
+
   return (
-    <form className="bg-paper-card border border-line rounded-sm p-5 sm:p-7 ruled-bg">
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-xs uppercase tracking-widest text-ink-faint font-mono">
-          {editingReport ? `Editing ${editingReport.status} entry` : 'New entry — same fields for every team member'}
-        </p>
+    <form className="bg-paper-card border border-line rounded-sm p-5 sm:p-7">
+      <div className="flex items-center justify-between mb-6 pb-5 border-b border-line-soft">
+        <div>
+          <p className="font-display text-lg text-ink leading-none mb-1">
+            {editingReport ? 'Edit this entry' : 'New weekly entry'}
+          </p>
+          <p className="text-xs text-ink-faint">
+            {editingReport ? `Currently ${editingReport.status}` : 'Same fields for every team member'}
+          </p>
+        </div>
         {editingReport && (
-          <button type="button" onClick={onCancelEdit} className="text-xs text-ink-faint hover:text-ink underline underline-offset-2">
-            Cancel
+          <button
+            type="button"
+            onClick={onCancelEdit}
+            className="text-xs text-ink-faint hover:text-ink underline underline-offset-2 shrink-0"
+          >
+            Cancel edit
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 mb-5">
-        <Field label="Week start" hint="Auto-adjusts to that week's Monday, so every member's weeks line up">
+      <div className="mb-5">
+        <Field label="Week start" required hint="Auto-adjusts to that week's Monday, so every member's weeks line up">
           <Input type="date" required value={form.weekStartDate} onChange={setWeekStart} />
         </Field>
-        <Field label="Week end" hint="Calculated automatically">
-          <Input type="date" required value={form.weekEndDate} readOnly disabled className="opacity-70 cursor-not-allowed" />
-        </Field>
+        {range && (
+          <p className="flex items-center gap-1.5 text-xs text-ink mt-2.5 font-mono">
+            <span className="w-1 h-1 rounded-full bg-accent-dark" />
+            Reporting week: <span className="font-medium">{range}</span>
+          </p>
+        )}
       </div>
 
       <div className="mb-5">
-        <Field label="Project / category" hint="Only projects you're assigned to appear here">
+        <Field label="Project / category" required hint="Only projects you're assigned to appear here">
           <Select required value={form.projectId} onChange={set('projectId')}>
             <option value="">Select a project…</option>
             {projects.map((p) => (
@@ -101,20 +124,20 @@ export default function ReportForm({ projects, editingReport, onSaveDraft, onSub
       </div>
 
       <div className="mb-5">
-        <Field label="Tasks completed">
+        <Field label="Tasks completed" required>
           <Textarea required value={form.tasksCompleted} onChange={set('tasksCompleted')} placeholder="What did you finish this week?" />
         </Field>
       </div>
 
       <div className="mb-5">
-        <Field label="Tasks planned for next week">
+        <Field label="Tasks planned for next week" required>
           <Textarea required value={form.tasksPlanned} onChange={set('tasksPlanned')} placeholder="What's next?" />
         </Field>
       </div>
 
       <div className="mb-5">
-        <Field label="Blockers / challenges" hint="Leave blank if none">
-          <Textarea value={form.blockers} onChange={set('blockers')} placeholder="Anything slowing you down?" />
+        <Field label="Blockers / challenges" hint="Leave blank if nothing is slowing you down">
+          <Textarea value={form.blockers} onChange={set('blockers')} placeholder="Anything blocking progress?" rows={2} />
         </Field>
       </div>
 
@@ -127,15 +150,20 @@ export default function ReportForm({ projects, editingReport, onSaveDraft, onSub
         </Field>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <Button type="button" variant="ghost" onClick={handleSaveDraft} disabled={submitting}>
-          {submitting ? 'Saving…' : 'Save as draft'}
-        </Button>
-        <Button type="button" variant="accent" onClick={handleSubmit} disabled={submitting}>
-          {submitting ? 'Submitting…' : editingReport?.status && editingReport.status !== 'draft' ? 'Save & re-submit' : 'Submit report'}
-        </Button>
+      <div className="border-t border-line-soft pt-5">
+        <div className="flex flex-wrap gap-3 mb-2.5">
+          <Button type="button" variant="ghost" onClick={handleSaveDraft} loading={submitting}>
+            {submitting ? 'Saving…' : 'Save as draft'}
+          </Button>
+          <Button type="button" variant="accent" onClick={handleSubmit} loading={submitting}>
+            {submitting ? 'Submitting…' : isResubmit ? 'Save & re-submit' : 'Submit report'}
+          </Button>
+        </div>
+        <p className="text-xs text-ink-faint leading-relaxed">
+          <span className="font-medium text-ink">Draft</span> saves privately, only visible to you.{' '}
+          <span className="font-medium text-ink">Submit</span> shares it with your manager on the team dashboard.
+        </p>
       </div>
     </form>
   );
 }
-
