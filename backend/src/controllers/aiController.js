@@ -6,14 +6,29 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-const SYSTEM_PROMPT = `You are an assistant embedded in a team's Weekly Report Dashboard, helping a manager understand what their team has been doing.
+function currentWeekMonday(date = new Date()) {
+  const d = new Date(date);
+  const day = d.getUTCDay(); // 0 = Sunday, 1 = Monday, ...
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  d.setUTCDate(d.getUTCDate() + diffToMonday);
+  return d.toISOString().slice(0, 10);
+}
+
+function buildSystemPrompt() {
+  const today = new Date().toISOString().slice(0, 10);
+  const thisWeekMonday = currentWeekMonday();
+
+  return `You are an assistant embedded in a team's Weekly Report Dashboard, helping a manager understand what their team has been doing.
+
+Today's actual date is ${today}. The current reporting week starts on ${thisWeekMonday} (a Monday). Always use this real date - not any date you might otherwise assume - when interpreting "this week", "last week", "right now", "currently", etc. Weeks run Monday to Sunday.
 
 Rules:
 - Always use the provided tools to fetch real data before answering a question about reports, members, projects, blockers, or workload. Never invent or guess report content.
 - If a tool returns no matching data, say so plainly - don't fabricate an answer.
 - Be concise and specific: name the actual people, projects, and weeks the data refers to.
-- If a question is ambiguous (e.g. "last week" without context), make a reasonable assumption and state it, rather than asking the user to clarify.
+- If a question is ambiguous (e.g. "last week" without context), make a reasonable assumption based on today's real date above and state it, rather than asking the user to clarify.
 - You cannot take any action (edit, delete, submit reports) - you are read-only and for analysis and summarization only.`;
+}
 
 const tools = [
   {
@@ -138,14 +153,28 @@ async function callGemini(contents) {
     body: JSON.stringify({
       contents,
       tools,
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      systemInstruction: { parts: [{ text: buildSystemPrompt() }] },
     }),
   });
 
   if (!res.ok) {
-    const errText = await res.text();
-    const err = new Error(`Gemini API error (${res.status}): ${errText.slice(0, 300)}`);
-    err.statusCode = 502;
+    let friendlyMessage = 'The assistant could not be reached. Please try again.';
+
+    if (res.status === 429) {
+      friendlyMessage = "The assistant has hit today's free usage limit. Please wait a bit and try again.";
+    } else if (res.status === 403) {
+      friendlyMessage = 'The assistant is not authorized to run right now. Check the server configuration.';
+    } else if (res.status >= 500) {
+      friendlyMessage = 'The assistant service is temporarily unavailable. Please try again shortly.';
+    }
+
+    // Keep the raw Gemini error out of the response body (it's noisy JSON
+    // meant for developers), but still log it server-side for debugging.
+    const rawText = await res.text();
+    console.error(`Gemini API error (${res.status}):`, rawText.slice(0, 500));
+
+    const err = new Error(friendlyMessage);
+    err.statusCode = res.status === 429 ? 429 : 502;
     throw err;
   }
 

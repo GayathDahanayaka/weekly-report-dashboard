@@ -44,14 +44,20 @@ exports.getSummary = async (req, res, next) => {
     const totalMembers = await User.countDocuments({ role: 'member' });
     const reports = await Report.find(filter);
 
-    const submittedCount = reports.filter((r) => r.status !== 'draft').length;
+    const submittedReports = reports.filter((r) => r.status !== 'draft');
+    const totalReportsSubmitted = submittedReports.length;
+
+    // Compliance uses *distinct members* who submitted, not raw report rows
+    // - a member can legitimately submit more than one report in a week
+    // (e.g. one per project), which would otherwise push the rate past 100%.
+    const submittedMemberIds = new Set(submittedReports.map((r) => r.userId.toString()));
     const complianceRate = totalMembers > 0
-      ? Math.round((submittedCount / totalMembers) * 100)
+      ? Math.min(100, Math.round((submittedMemberIds.size / totalMembers) * 100))
       : 0;
     const openBlockers = reports.filter((r) => r.blockers && r.blockers.trim() !== '').length;
 
     res.status(200).json({
-      totalReportsSubmitted: submittedCount,
+      totalReportsSubmitted,
       totalMembers,
       complianceRate,
       openBlockers,
@@ -61,19 +67,31 @@ exports.getSummary = async (req, res, next) => {
   }
 };
 
-// @route  GET /api/dashboard/trend   (manager) - tasksCompleted count per week, team-wide
+// @route  GET /api/dashboard/trend   (manager) - reports submitted per calendar
+// week, based on when they were actually submitted (not which work-week they
+// report on) - so this reflects real submission activity over time.
 exports.getTrend = async (req, res, next) => {
   try {
-    const trend = await Report.aggregate([
-      { $match: { status: { $ne: 'draft' } } },
-      {
-        $group: {
-          _id: '$weekStartDate',
-          reportsCount: { $sum: 1 },
-        },
-      },
-      { $sort: { _id: 1 } },
-    ]);
+    const reports = await Report.find({
+      status: { $ne: 'draft' },
+      submittedAt: { $ne: null },
+    }).select('submittedAt');
+
+    const buckets = {};
+    reports.forEach((r) => {
+      const d = new Date(r.submittedAt);
+      const day = d.getUTCDay(); // 0 = Sunday
+      const diffToMonday = day === 0 ? -6 : 1 - day;
+      const monday = new Date(d);
+      monday.setUTCDate(monday.getUTCDate() + diffToMonday);
+      monday.setUTCHours(0, 0, 0, 0);
+      const key = monday.toISOString().slice(0, 10);
+      buckets[key] = (buckets[key] || 0) + 1;
+    });
+
+    const trend = Object.entries(buckets)
+      .map(([weekStart, reportsCount]) => ({ _id: weekStart, reportsCount }))
+      .sort((a, b) => (a._id < b._id ? -1 : 1));
 
     res.status(200).json({ trend });
   } catch (error) {

@@ -123,11 +123,14 @@ export default function TeamDashboard() {
       if (filters.project) params.set('project', filters.project);
       if (filters.from) params.set('from', filters.from);
       if (filters.to) params.set('to', filters.to);
+      // Only send "week" when there's no explicit custom range - from/to
+      // (a specific date range) takes priority over the week quick-filter.
+      if (filters.week && !filters.from && !filters.to) params.set('week', filters.week);
       const { data } = await axiosInstance.get(`/reports?${params.toString()}`);
       setReports(data.reports);
     };
     loadReports();
-  }, [filters.member, filters.project, filters.from, filters.to]);
+  }, [filters.week, filters.member, filters.project, filters.from, filters.to]);
 
   const weekLabel = weekOptions.find((w) => w.value === filters.week)?.label || '';
 
