@@ -5,6 +5,7 @@ const errorHandler = require('./middleware/errorHandler');
 const projectRoutes = require('./routes/projectRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 const app = express();
 
@@ -19,7 +20,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-
+app.use('/api/ai', aiRoutes);
 
 app.use(errorHandler);
 

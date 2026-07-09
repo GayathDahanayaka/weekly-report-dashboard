@@ -4,8 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 import { Field, Input } from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import { ErrorBanner } from '../../components/common/Loader';
+import { useDocumentTitle } from '../../utils/useDocumentTitle';
 
 export default function Login() {
+  useDocumentTitle('Sign in');
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
@@ -34,7 +36,7 @@ export default function Login() {
           <p className="font-display text-3xl text-accent leading-none">Ledger</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-paper-card rounded-sm p-8 space-y-5 shadow-xl">
+        <form onSubmit={handleSubmit} className="bg-paper-card rounded-sm p-8 space-y-5 shadow-xl animate-scaleIn">
           <h1 className="font-display text-xl text-ink mb-1">Sign in</h1>
           <ErrorBanner message={error} />
 
@@ -58,13 +60,13 @@ export default function Login() {
             />
           </Field>
 
-          <Button type="submit" variant="accent" className="w-full mt-2" disabled={loading}>
+          <Button type="submit" variant="accent" className="w-full mt-2" loading={loading}>
             {loading ? 'Signing in…' : 'Sign in'}
           </Button>
 
           <p className="text-xs text-ink-faint text-center pt-2">
             New here?{' '}
-            <Link to="/register" className="text-accent-dark font-medium">
+            <Link to="/register" className="text-accent-dark font-medium hover:text-accent transition-colors">
               Create an account
             </Link>
           </p>

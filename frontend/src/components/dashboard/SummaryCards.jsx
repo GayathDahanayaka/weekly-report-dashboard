@@ -7,9 +7,13 @@ export default function SummaryCards({ summary }) {
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       {cards.map((c, i) => (
-        <div key={c.label} className="border border-line bg-paper-card rounded-sm p-5 relative">
+        <div
+          key={c.label}
+          className="card-hover border border-line bg-paper-card rounded-sm p-5 relative overflow-hidden"
+        >
+          <span className="absolute top-0 left-0 h-0.5 w-8 bg-accent" />
           <span className="absolute top-3 right-4 font-mono text-[10px] text-ink-faint">
             {String(i + 1).padStart(2, '0')}
           </span>

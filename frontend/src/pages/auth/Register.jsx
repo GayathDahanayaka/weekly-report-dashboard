@@ -4,8 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 import { Field, Input } from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import { ErrorBanner } from '../../components/common/Loader';
+import { useDocumentTitle } from '../../utils/useDocumentTitle';
 
 export default function Register() {
+  useDocumentTitle('Create account');
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'member' });
@@ -34,7 +36,7 @@ export default function Register() {
           <p className="font-display text-3xl text-accent leading-none">Ledger</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-paper-card rounded-sm p-8 space-y-5 shadow-xl">
+        <form onSubmit={handleSubmit} className="bg-paper-card rounded-sm p-8 space-y-5 shadow-xl animate-scaleIn">
           <h1 className="font-display text-xl text-ink mb-1">Create your account</h1>
           <ErrorBanner message={error} />
 
@@ -78,7 +80,7 @@ export default function Register() {
                   className={`flex-1 capitalize text-sm py-2 rounded-sm border transition-colors ${
                     form.role === r
                       ? 'border-ink bg-ink text-paper'
-                      : 'border-line text-ink-faint hover:border-ink'
+                      : 'border-line text-ink-faint hover:border-ink hover:bg-paper-dim'
                   }`}
                 >
                   {r}
@@ -87,13 +89,13 @@ export default function Register() {
             </div>
           </Field>
 
-          <Button type="submit" variant="accent" className="w-full mt-2" disabled={loading}>
+          <Button type="submit" variant="accent" className="w-full mt-2" loading={loading}>
             {loading ? 'Creating account…' : 'Create account'}
           </Button>
 
           <p className="text-xs text-ink-faint text-center pt-2">
             Already have an account?{' '}
-            <Link to="/login" className="text-accent-dark font-medium">
+            <Link to="/login" className="text-accent-dark font-medium hover:text-accent transition-colors">
               Sign in
             </Link>
           </p>

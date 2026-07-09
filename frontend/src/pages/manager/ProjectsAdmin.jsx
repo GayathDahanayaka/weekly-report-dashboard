@@ -2,22 +2,34 @@ import { useEffect, useState } from 'react';
 import AppLayout from '../../components/layout/AppLayout';
 import { Field, Input, Textarea } from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { Loader, ErrorBanner, EmptyState } from '../../components/common/Loader';
 import axiosInstance from '../../api/axiosInstance';
+import { useToast } from '../../context/ToastContext';
+import { useDocumentTitle } from '../../utils/useDocumentTitle';
 
 export default function ProjectsAdmin() {
+  useDocumentTitle('Projects');
+  const { showToast } = useToast();
   const [projects, setProjects] = useState([]);
+  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ name: '', description: '' });
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [assigningId, setAssigningId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await axiosInstance.get('/projects');
-      setProjects(data.projects);
+      const [projectsRes, membersRes] = await Promise.all([
+        axiosInstance.get('/projects'),
+        axiosInstance.get('/dashboard/members'),
+      ]);
+      setProjects(projectsRes.data.projects);
+      setMembers(membersRes.data.members);
     } catch {
       setError('Could not load projects.');
     } finally {
@@ -39,8 +51,10 @@ export default function ProjectsAdmin() {
     try {
       if (editingId) {
         await axiosInstance.put(`/projects/${editingId}`, form);
+        showToast('Project updated');
       } else {
         await axiosInstance.post('/projects', form);
+        showToast('Project added');
       }
       resetForm();
       await load();
@@ -56,21 +70,36 @@ export default function ProjectsAdmin() {
     setEditingId(p._id);
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Delete this project? Reports linked to it will keep their reference.')) return;
+  const confirmDelete = async () => {
     try {
-      await axiosInstance.delete(`/projects/${id}`);
+      await axiosInstance.delete(`/projects/${deleteTarget._id}`);
+      showToast('Project deleted');
+      setDeleteTarget(null);
       await load();
     } catch {
       setError('Could not delete project.');
+      setDeleteTarget(null);
+    }
+  };
+
+  const toggleMember = async (project, memberId) => {
+    const current = project.assignedMembers?.map((m) => m._id) || [];
+    const next = current.includes(memberId)
+      ? current.filter((id) => id !== memberId)
+      : [...current, memberId];
+    try {
+      await axiosInstance.put(`/projects/${project._id}/assign`, { memberIds: next });
+      await load();
+    } catch {
+      setError('Could not update assignment.');
     }
   };
 
   return (
     <AppLayout title="Projects" subtitle="Categories your team tags weekly reports with.">
       <ErrorBanner message={error} />
-      <div className="grid grid-cols-[1fr_1.4fr] gap-8 items-start">
-        <form onSubmit={handleSubmit} className="border border-line bg-paper-card rounded-sm p-6 sticky top-9">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-8 items-start">
+        <form onSubmit={handleSubmit} className="border border-line bg-paper-card rounded-sm p-6 lg:sticky lg:top-9">
           <p className="text-xs uppercase tracking-widest text-ink-faint font-mono mb-5">
             {editingId ? 'Edit project' : 'New project'}
           </p>
@@ -98,21 +127,61 @@ export default function ProjectsAdmin() {
           ) : (
             <div className="space-y-3">
               {projects.map((p) => (
-                <div key={p._id} className="border border-line bg-paper-card rounded-sm p-5 flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-ink font-medium">{p.name}</p>
-                    {p.description && <p className="text-sm text-ink-faint mt-1">{p.description}</p>}
+                <div key={p._id} className="border border-line bg-paper-card rounded-sm p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
+                    <div>
+                      <p className="text-ink font-medium">{p.name}</p>
+                      {p.description && <p className="text-sm text-ink-faint mt-1">{p.description}</p>}
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <Button variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => handleEdit(p)}>Edit</Button>
+                      <Button variant="danger" className="px-3 py-1.5 text-xs" onClick={() => setDeleteTarget(p)}>Delete</Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2 shrink-0">
-                    <Button variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => handleEdit(p)}>Edit</Button>
-                    <Button variant="danger" className="px-3 py-1.5 text-xs" onClick={() => handleDelete(p._id)}>Delete</Button>
-                  </div>
+
+                  <button
+                    onClick={() => setAssigningId(assigningId === p._id ? null : p._id)}
+                    className="text-xs text-accent-dark underline underline-offset-2"
+                  >
+                    {assigningId === p._id ? 'Hide team assignment' : `Team (${p.assignedMembers?.length || 0} assigned)`}
+                  </button>
+
+                  {assigningId === p._id && (
+                    <div className="mt-3 pt-3 border-t border-line-soft flex flex-wrap gap-2">
+                      {members.length === 0 && <p className="text-xs text-ink-faint">No members registered yet.</p>}
+                      {members.map((m) => {
+                        const isAssigned = p.assignedMembers?.some((am) => am._id === m._id);
+                        return (
+                          <button
+                            key={m._id}
+                            onClick={() => toggleMember(p, m._id)}
+                            className={`text-xs px-3 py-1.5 rounded-sm border transition-colors ${
+                              isAssigned
+                                ? 'border-ink bg-ink text-paper'
+                                : 'border-line text-ink-faint hover:border-ink'
+                            }`}
+                          >
+                            {m.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete this project?"
+        message={`"${deleteTarget?.name}" will be removed. Reports already linked to it keep their reference.`}
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </AppLayout>
   );
 }
